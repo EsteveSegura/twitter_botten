@@ -41,6 +41,38 @@ function answerSadPeople(data){
     })
 }
 
+/**************************************** 
+ * Name: uploadImage 
+ * Type: Void
+ * Description: This method allows us to upload an image to our timeline
+ **************  PARAMS  ****************
+ * text(String): Text to tweet.
+ * imagePath(String): Path to image.
+ ***************  USAGE  ****************
+ * uploadImage('Me and my dog', './img/WithMyDog.jpg');
+*****************************************/
+function uploadImage(text,imagePath) {
+    //Encoding image to Base64
+    let b64content = fs.readFileSync(imagePath, { encoding: 'base64' })
+
+    //Creating resource in the server
+    T.post('media/upload', { media_data: b64content }, function (err, data, response) {
+        let mediaIdStr = data.media_id_string
+        let meta_params = { 'media_id': mediaIdStr }
+
+        //Creating metadata for image
+        T.post('media/metadata/create', meta_params, (err, data, response) => {
+            if (!err) {
+                let params = { 'status': text, media_ids: [mediaIdStr] }
+                //Creating the tweet
+                T.post('statuses/update', params, (err, data, response) => {
+                    console.log('Image Uploaded!');
+                });
+            }
+        });
+    });
+}
+
 (async () => {
     let sadPeople = await getSadPeople('Estoy muy triste');
     console.log(`I found some sad people : ${sadPeople.length} tweets`)
