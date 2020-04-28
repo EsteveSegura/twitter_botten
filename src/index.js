@@ -18,27 +18,25 @@ function asyncSleep(s){
 
 function getSadPeople(sadText){
     return new Promise(async(resolve,reject) => {
-        let sadPeople = []
+        let foundTweets = []
         let twitterAction = await T.get('search/tweets', { q: '"' + sadText + '"', lang:'es', count: 100 }, function(err, data, response) {
             for(let i = 0 ; i < data.statuses.length;i++){
                 if(!data.statuses[i].in_reply_to_status_id && !data.statuses[i].retweeted && !data.statuses[i].text.startsWith('RT')){
-                    sadPeople.push({
+                    foundTweets.push({
                         "text": data.statuses[i].text,
                         "user":data.statuses[i].user.screen_name,
                         "tweetId":data.statuses[i].id_str,
                     });
                 }
             }
-            resolve(sadPeople)
+            resolve(foundTweets);
         });
     });
 }
 
 function answerSadPeople(data){
     console.log(data.tweetId)
-    T.post('statuses/update', { in_reply_to_status_id: data.tweetId, status: `@${data.user} Te diria que lo entiendo, pero soy un BOT. Animate.` }, (err, data, response) => {
-        
-    })
+    T.post('statuses/update', { in_reply_to_status_id: data.tweetId, status: `@${data.user} Te diria que lo entiendo, pero soy un BOT. Animate.` }, (err, data, response) => {})
 }
 
 /**************************************** 
@@ -77,9 +75,9 @@ function uploadImage(text,imagePath) {
     let sadPeople = await getSadPeople('Estoy muy triste');
     console.log(`I found some sad people : ${sadPeople.length} tweets`)
     for(let i = 0 ; i < sadPeople.length ; i++){
-        answerSadPeople(sadPeople[i])
-        console.log(`+1 answer to https://twitter.com/${sadPeople[i].user}/status/${sadPeople[i].tweetId}`)
-        await asyncSleep(80);
+        //answerSadPeople(sadPeople[i])
+        //console.log(`+1 answer to https://twitter.com/${sadPeople[i].user}/status/${sadPeople[i].tweetId}`)
+        //await asyncSleep(80);
     }
     //console.log(sadPeople)
 })();
