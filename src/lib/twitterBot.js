@@ -1,9 +1,10 @@
 require('dotenv').config();
 const twit = require('twit');
 const tweet = require('./tweet');
+const user = require('./user')
 
 /**
- * Class that handles all bot actions
+ * Class that handles all twitter actions
  */
 class Bot {
     
@@ -49,6 +50,7 @@ class Bot {
             let foundTweets = []
             let twitterAction = await this.T.get('search/tweets', { q: '"' + textToSearch + '"', lang: 'es', count: count || 100 }, function (err, data, response) {
                 for (let i = 0; i < data.statuses.length; i++) {
+                    //console.log(data.statuses[i].user)
                     if (!data.statuses[i].in_reply_to_status_id && !data.statuses[i].retweeted && !data.statuses[i].text.startsWith('RT')) {
                         let actualTweet = new tweet(data.statuses[i].user.screen_name, data.statuses[i].text, data.statuses[i].id_str)
                         foundTweets.push(actualTweet);
@@ -92,8 +94,32 @@ class Bot {
      * @author GiR
      * @param  {tweet} tweetObject - objectTweet for answering
      */
-    answerSadPeople(tweetObject) {
-        this.T.post('statuses/update', { in_reply_to_status_id: tweetObject.getTweetId(), status: `@${tweetObject.getUser()} Te diria que lo entiendo, pero soy un BOT. Animate.` }, (err, data, response) => { })
+    replyToTweet(tweetObject) {
+        this.T.post('statuses/update', { in_reply_to_status_id: tweetObject.getTweetId(), status: `@${tweetObject.getUser()} Te diria que lo entiendo, pero soy un BOT. Animate.` }, (err, data, response) => { 
+            if(err){
+                throw err;
+            }
+        });
+    }
+    /**
+     * Search for user by screenName and returns a user type object
+     * @author GiR
+     * @param  {string} screenName
+     * @returns {user} return object Type user
+     */
+    getUserByScreenName(screenName){ 
+        return new Promise((resolve,reject) => {
+            let tweetsArray = [];
+            this.T.get('statuses/user_timeline' , { 'screen_name' : screenName, count: 200}, function (err, data, response) {
+                for(let i = 0 ; i < data.length ; i++){
+                    let actualTweet = new tweet(data[i].user.screen_name, data[i].text, data[i].id_str)
+                    tweetsArray.push(actualTweet)
+                }
+
+                let twitterUser = new user(screenName, data[1].user.name, data[1].user.id_str ,data[1].user.profile_image_url, tweetsArray)
+                resolve(twitterUser)
+            });
+        })
     }
 
 

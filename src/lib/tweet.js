@@ -18,7 +18,7 @@ class tweet{
     }
 
     getUrl(){
-        return `https://twitter.com/${this.user}/status/${this.getTweetId}` 
+        return `https://twitter.com/${this.user}/status/${this.tweetId}` 
     }
 
     toString(){
