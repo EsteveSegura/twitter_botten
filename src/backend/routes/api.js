@@ -6,6 +6,9 @@ const secure = require('../lib/secure');
 const admin = require('../admin.json')
 
 const twitterTweet = require('../models/twitterTweet');
+const twitterUser = require('../models/twitterUser');
+const userDb = require('../models/user');
+const utils = require('../lib/utils')
 
 // MAIN
 router.get('/', (req, res) => {
@@ -135,8 +138,34 @@ router.post('/tweet/approve/:idTweet', secure.verifyToken, async (req, res) => {
                     let edit = await twitterTweet.updateOne({ 'tweetId': req.params.idTweet }, { 'approved': true });
 
                     //CREATE MAGIC LINK AND EVERYTHING TO MAKE IT WORKS
+                    twitterUser.findOne({ 'screenName': tweet.user }, async (err, _twitterUser) => {
+                        if (err) {
+                            throw err;
+                        }
+                        userDb.findOne({ 'userId': _twitterUser.screenName }, async (err, _userDb) => {
+                            if (err) {
+                                throw err;
+                            }
 
-                    console.log(edit)
+                            if (_userDb) {
+                                res.json({ "message": "error" })
+                            } else {
+                                if (_twitterUser) {
+                                    let newUser = new userDb({
+                                        'userId': _twitterUser.userId,
+                                        'tweetId': req.params.idTweet,
+                                        'magicUrlEndPoint': utils.makeId(7)
+                                    });
+                                    await newUser.save(async (err) => {
+                                        if (err) {
+                                            throw err;
+                                        }
+                                    });
+                                }
+                            }
+
+                        });
+                    });
                     res.json({ "tweet": tweet, "approved": true })
                 }
             });
@@ -160,6 +189,7 @@ router.post('/tweet/disapprove/:idTweet', secure.verifyToken, async (req, res) =
                     //AND REMOVE ASYNCS
                     let edit = await twitterTweet.updateOne({ 'tweetId': req.params.idTweet }, { 'approved': false });
 
+
                     console.log(edit)
                     res.json({ "tweet": tweet, "approved": true })
                 }
@@ -168,5 +198,23 @@ router.post('/tweet/disapprove/:idTweet', secure.verifyToken, async (req, res) =
     });
     //
 });
+
+//Regular USER
+router.get('/user/login/:magicLink', (req, res) => {
+    userDb.findOne({ 'magicUrlEndPoint' : req.params.magicLink }, (err, user) => {
+        if (err) {
+            throw err;
+        }
+
+        if (user) {
+            jwt.sign({ 'magicUrlEndPoint': req.params.magicLink }, process.env.MASTER_KEY, (err, token) => {
+                req.session.token = token;
+                res.json({ 'message': 'OK', 'user': user });
+            });
+        } else {
+            res.sendStatus(403);
+        }
+    });
+})
 
 module.exports = router
